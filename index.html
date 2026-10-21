@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RainWise - Rainfall Probability Predictor</title>
+<meta name="description" content="Predict rain probability from weather conditions with a logistic regression model trained in your browser - with an honest calibration curve.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="design.css">
+<style>
+.grid{display:grid;grid-template-columns:400px 1fr;gap:22px;align-items:start}
+@media(max-width:1020px){.grid{grid-template-columns:1fr}}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.slider-row{display:flex;align-items:center;gap:14px}
+.slider-row output{font-weight:800;font-size:15px;min-width:74px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{flex:1;appearance:none;height:6px;border-radius:99px;background:var(--surface2);outline:none}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+.sect{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.gauge-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.gauge{position:relative;width:190px;height:190px;flex:none}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .num b{font-size:44px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.gauge .num span{font-size:12px;color:var(--muted);font-weight:700}
+.verdict{font-size:19px;font-weight:800;margin-bottom:8px}
+.verdict.rain{color:var(--accent)}.verdict.dry{color:#16a34a}
+.factor{display:grid;grid-template-columns:150px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px;font-size:13px}
+.factor .fb{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.factor .fb i{display:block;height:100%;border-radius:99px}
+.factor .fv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+canvas.chart{width:100%;display:block}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px}
+.stat{background:var(--surface2);border-radius:12px;padding:11px 13px}
+.stat b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px;color:var(--muted);font-weight:600}
+.stack{display:grid;gap:22px}
+.limit-card{border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));font-size:13.5px;color:var(--muted)}
+.limit-card b{color:var(--ink)}
+.advice{padding:12px 16px;border-radius:12px;background:var(--surface2);font-size:14px;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="6" fill="url(#g)"/><path d="M8 15a4.5 4.5 0 118 0M9.5 18l-1 2.5M13 18l-1 2.5M16.5 18l-1 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs></svg>&nbsp;RainWise</div>
+  <span class="sp"></span>
+  <button id="btn-install" class="icon-btn" hidden title="Install app">⤓</button>
+  <button id="btn-theme" class="icon-btn" title="Toggle theme">☾</button>
+</nav>
+<main class="page">
+  <header class="page-head">
+    <h1>Umbrella or <em>sunglasses?</em></h1>
+    <p>A logistic-regression model trained on 3 years of daily weather learns how humidity, pressure, cloud, and wind combine into rain probability - and shows you a calibration curve proving what its numbers mean.</p>
+  </header>
+  <div class="grid">
+    <section class="card"><div class="card-body">
+      <h2 class="sect">Today's conditions</h2>
+      <div class="field"><label for="hum">Humidity</label>
+        <div class="slider-row"><input type="range" id="hum" min="10" max="100" value="72"><output id="humOut">72%</output></div></div>
+      <div class="field"><label for="pres">Sea-level pressure</label>
+        <div class="slider-row"><input type="range" id="pres" min="980" max="1040" value="1006"><output id="presOut">1006 hPa</output></div></div>
+      <div class="field"><label for="cloud">Cloud cover</label>
+        <div class="slider-row"><input type="range" id="cloud" min="0" max="100" value="60"><output id="cloudOut">60%</output></div></div>
+      <div class="field"><label for="wind">Wind speed</label>
+        <div class="slider-row"><input type="range" id="wind" min="0" max="60" value="14"><output id="windOut">14 km/h</output></div></div>
+      <div class="field"><label for="temp">Temperature</label>
+        <div class="slider-row"><input type="range" id="temp" min="-5" max="42" value="24"><output id="tempOut">24°C</output></div></div>
+      <div class="field"><label for="season">Season</label>
+        <select id="season" class="input">
+          <option value="0">Spring</option><option value="1">Monsoon</option>
+          <option value="2">Autumn</option><option value="3">Winter</option>
+        </select></div>
+      <div class="advice" id="advice">–</div>
+    </div></section>
+    <div class="stack">
+      <section class="card"><div class="card-body">
+        <h2 class="sect">Rain probability</h2>
+        <div class="gauge-wrap">
+          <div class="gauge">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface2)" stroke-width="11"/>
+              <circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="url(#gg)" stroke-width="11" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+              <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs>
+            </svg>
+            <div class="num"><b id="prob">–</b><span>chance of rain</span></div>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <div class="verdict" id="verdict">–</div>
+            <p style="font-size:13.5px;color:var(--muted)" id="verdictSub">–</p>
+          </div>
+        </div>
+      </div></section>
+      <section class="card"><div class="card-body">
+        <h2 class="sect">What's pushing the prediction</h2>
+        <div id="factors"></div>
+      </div></section>
+      <section class="card"><div class="card-body">
+        <h2 class="sect">Calibration - when the model says X%, does it rain X% of the time?</h2>
+        <canvas class="chart" id="calib" height="190"></canvas>
+        <div class="stat-grid" style="margin-top:14px">
+          <div class="stat"><b id="m-brier">–</b><span>Brier score</span></div>
+          <div class="stat"><b id="m-acc">–</b><span>Accuracy @50%</span></div>
+          <div class="stat"><b id="m-n">–</b><span>Training days</span></div>
+          <div class="stat"><b id="m-ms">–</b><span>Train time</span></div>
+        </div>
+      </div></section>
+      <section class="card limit-card"><div class="card-body">
+        <b>Honest limits.</b> Open weather APIs require keys, so training data is <b>simulated</b> from realistic climatology (monsoon seasons, pressure-rain physics). The logistic model, calibration curve, and Brier score are real measurements on held-out days. This is a teaching-grade model - check a real forecast before canceling plans.
+      </div></section>
+    </div>
+  </div>
+</main>
+<script src="core.js"></script>
+<script src="app.js"></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')</script>
+</body>
+</html>
