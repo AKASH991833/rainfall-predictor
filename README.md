@@ -30,3 +30,19 @@ Vanilla HTML/CSS/JS, zero dependencies.
 ## Run locally
 
 Open `index.html` or serve the folder (`python3 -m http.server`).
+
+---
+
+## 🐍 Python version (real ML backend) - `python-app/`
+
+The browser demo above is fully client-side. This folder is the **pro-grade version** with a real training pipeline on real data:
+
+Next-day rain for Lucknow from 6 years of real Open-Meteo/ERA5 weather. 90.6% accuracy, AUC 0.93. Stack: Python, Streamlit, XGBoost.
+
+```bash
+cd python-app
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Deploy free on **Hugging Face Spaces** (no card): create a Space, upload the `python-app/` folder - it ships Space-ready (`sdk` + `app_file` already set in its README). Retrain anytime with `python train.py` (where present).

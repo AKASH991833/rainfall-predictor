@@ -1,0 +1,27 @@
+{
+  "accuracy": 0.906,
+  "roc_auc": 0.933,
+  "amount_mae_mm": 8.7,
+  "n_days": 2191,
+  "n_test": 438,
+  "city": "Lucknow, India (26.85N, 80.95E)",
+  "source": "Open-Meteo historical archive (ERA5), 2019-2024",
+  "features": [
+    "temperature_2m_max",
+    "temperature_2m_min",
+    "wind_speed_10m_max",
+    "wind_gusts_10m_max",
+    "relative_humidity_2m_mean",
+    "surface_pressure_mean",
+    "cloud_cover_mean",
+    "shortwave_radiation_sum",
+    "precipitation_sum",
+    "month",
+    "doy_sin",
+    "doy_cos",
+    "temp_range",
+    "precip_3d",
+    "humid_3d",
+    "pressure_delta"
+  ]
+}
